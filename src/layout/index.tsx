@@ -5,8 +5,10 @@ import Footer from './footer'
 export default ()=>{
     return (
         <>
-            <Header />
-            <Outlet />
+			<Header />
+			<main className='pt-12'>
+				<Outlet />
+			</main>
             <Footer />
         </>
     )
