@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from "react";
 import * as THREE from 'three';
 import { OrbitControls } from "three/addons";
 
-
+// 星球
 export default () => {
 	const scene = useRef<THREE.Scene>()
 	const camera = useRef<THREE.PerspectiveCamera>()
@@ -10,14 +10,14 @@ export default () => {
 	const controls = useRef<OrbitControls>()
 	const clock = useRef<THREE.Clock>()
 	const sphereMaterial = useRef<THREE.ShaderMaterial>()
-	const sphere = useRef<THREE.Mesh>()
+	const sphere = useRef<THREE.Points>()
 
 	const renderBoxRef = useRef<HTMLDivElement>(null)
 	const render = () => {
 		if(!scene.current) return
-		const time = clock.current!.getElapsedTime();
-		sphereMaterial.current!.uniforms.uTime.value = time;
-		sphere.current!.rotation.y = time;
+		const time = clock.current!.getElapsedTime() * 0.5;
+		sphereMaterial.current!.uniforms.uTime.value = time
+		// sphere.current!.rotation.y = time;
 		renderer.current!.render(scene.current!, camera.current!);
 		requestAnimationFrame(render);
 	}
@@ -28,7 +28,7 @@ export default () => {
 		scene.current = new THREE.Scene();
 
 		camera.current = new THREE.PerspectiveCamera(75, w / h, 0.01, 1000);
-		camera.current.position.set(0, 0, 4);
+		camera.current.position.set(0, 0, 24);
 		camera.current.lookAt(new THREE.Vector3());
 
 		renderer.current = new THREE.WebGLRenderer({
@@ -42,19 +42,27 @@ export default () => {
 
 		controls.current = new OrbitControls(camera.current, renderer.current.domElement);
 
-		const sphereGeometry = new THREE.SphereGeometry(1, 32, 32);
+		const sphereGeometry = new THREE.IcosahedronGeometry(10, 6);
 
 		const vertexShader = /* GLSL */ `
   uniform float uTime;
+  varying vec2 vUv;
 
   void main() {
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+
+    vUv = uv;
+    
+    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+    gl_PointSize = 100.0 / -mvPosition.z;
+    gl_Position = projectionMatrix * mvPosition;
   }
 `;
 
 		const fragmentShader = /* GLSL */ `
+  varying vec2 vUv;
   void main() {
-    gl_FragColor = vec4(vec3(1.0), 1.0);
+    float color = step(0.5, vUv.x);
+    gl_FragColor = vec4(fract(vUv.x * 3.0), 0.0, 0.0, 1.0);
   }
 `;
 
@@ -66,7 +74,8 @@ export default () => {
 			},
 			wireframe: true,
 		});
-		sphere.current = new THREE.Mesh(sphereGeometry, sphereMaterial.current);
+		// sphere.current = new THREE.Mesh(sphereGeometry, sphereMaterial.current);
+		sphere.current = new THREE.Points(sphereGeometry, sphereMaterial.current)
 		scene.current.add(sphere.current);
 
 		clock.current = new THREE.Clock();
