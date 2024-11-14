@@ -1,7 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import * as THREE from 'three';
 import { OrbitControls } from "three/addons";
-import { div } from "three/webgpu";
 
 // 星球
 export default () => {
