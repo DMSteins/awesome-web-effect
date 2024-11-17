@@ -1,5 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import * as THREE from 'three';
+import fragmentShader from './shaders/noiseWater.fs?raw'
+import vertexShader from './shaders/noiseWater.vs?raw'
 
 export default ()=>{
     const scene = useRef<THREE.Scene>()
@@ -7,14 +9,13 @@ export default ()=>{
 	const renderer = useRef<THREE.WebGLRenderer>()
 	const clock = useRef<THREE.Clock>()
 	const material = useRef<THREE.ShaderMaterial>()
-	const sphere = useRef<THREE.Points>()
-
+	const mesh = useRef<THREE.Mesh>()
 	const renderBoxRef = useRef<HTMLDivElement>(null)
 	const render = () => {
 		if(!scene.current) return
 		const time = clock.current!.getElapsedTime();
 		material.current!.uniforms.uTime.value = time
-		sphere.current!.rotation.y = time * 0.01;
+		mesh.current!.rotation.y = time * 0.3;
 		renderer.current!.render(scene.current!, camera.current!);
 		requestAnimationFrame(render);
 	}
@@ -28,23 +29,36 @@ export default ()=>{
 		_camera.lookAt(new THREE.Vector3())
 		camera.current = _camera
 		
-		const geo = new THREE.SphereGeometry(10)
-		const material = new THREE.ShaderMaterial({
-			wireframe: true
+		const _geometry = new THREE.SphereGeometry(1, 200, 200)
+
+		const _material = new THREE.ShaderMaterial({
+			// wireframe: true,
+			vertexShader: vertexShader,
+			fragmentShader: fragmentShader,
+			uniforms: {
+				uTime: {
+					value: 0
+				}
+			}
 		})
-		const mesh = new THREE.Mesh(geo, material)
-		_scene.add(mesh)
+		const _mesh = new THREE.Mesh(_geometry, _material)
+		_scene.add(_mesh)
 
-		const _render = new THREE.WebGLRenderer()
-		_render.setPixelRatio(window.devicePixelRatio);
-		_render.setSize(w, h);
-		_render.setClearColor(0x0a0a0f, 1);
-		_render.render(_scene, _camera)
+		const _renderer = new THREE.WebGLRenderer()
+		_renderer.setPixelRatio(window.devicePixelRatio);
+		_renderer.setSize(w, h);
+		_renderer.setClearColor(0x0a0a0f, 1);
+		_renderer.render(_scene, _camera)
 
-		renderBoxRef.current.appendChild(_render.domElement)
+		renderBoxRef.current.appendChild(_renderer.domElement)
 
+		clock.current = new THREE.Clock()
+		renderer.current = _renderer
+		mesh.current = _mesh
+		material.current = _material
 		scene.current = _scene
 		camera.current = _camera
+		render()
     }
     useEffect(() => {
 		if(scene.current) return
