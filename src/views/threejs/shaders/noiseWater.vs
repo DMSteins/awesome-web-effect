@@ -95,10 +95,16 @@ float snoise(vec4 v){
                + dot(m1*m1, vec2( dot( p3, x3 ), dot( p4, x4 ) ) ) ) ;
 }
 
+vec3 hsv2rgb(vec3 c) {
+  vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+  vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
 void main() {
     vNormal = normal;
   float noise = snoise(vec4(position * 10.0, uTime));
-  vColor = vec3(noise);
+  vColor = hsv2rgb(vec3(noise * 0.1 + 0.04, 0.8, 1.0));
   vec3 newPos = position + 0.8 * normal * noise;
   // gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   gl_Position = projectionMatrix * modelViewMatrix * vec4(newPos, 1.0);

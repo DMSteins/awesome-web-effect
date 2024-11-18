@@ -81,9 +81,11 @@ export default () => {
   void main() {
     // float color = step(0.5, vUv.x);
     // gl_FragColor = vec4(fract(vUv.x * 3.0), 0.0, 0.0, 1.0);
-	float mask = step(length(gl_PointCoord - 0.5), 0.5);
-  	if(mask < 0.5) discard;
-	gl_FragColor = vec4(vColor, 1.);
+	// float mask = step(length(gl_PointCoord - 0.5), 0.5);
+  	// if(mask < 0.5) discard;
+	float d = length(gl_PointCoord - 0.5);
+	if (d > 0.5) discard;
+	gl_FragColor = vec4(vColor, smoothstep(0.7, 0.3, d));
   }
 `;
 

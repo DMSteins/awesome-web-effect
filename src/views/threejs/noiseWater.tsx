@@ -10,11 +10,13 @@ export default ()=>{
 	const clock = useRef<THREE.Clock>()
 	const material = useRef<THREE.ShaderMaterial>()
 	const mesh = useRef<THREE.Mesh>()
+	const particleMaterial = useRef<THREE.ShaderMaterial>()
 	const renderBoxRef = useRef<HTMLDivElement>(null)
 	const render = () => {
 		if(!scene.current) return
 		const time = clock.current!.getElapsedTime();
 		material.current!.uniforms.uTime.value = time
+		particleMaterial.current!.uniforms.uTime.value = time
 		mesh.current!.rotation.y = time * 0.3;
 		renderer.current!.render(scene.current!, camera.current!);
 		requestAnimationFrame(render);
@@ -43,6 +45,62 @@ export default ()=>{
 		})
 		const _mesh = new THREE.Mesh(_geometry, _material)
 		_scene.add(_mesh)
+
+		const particleGeometry = new THREE.BufferGeometry();
+
+		const N = 4000;
+		const positions = new Float32Array(N * 3);
+		const inc = Math.PI * (3 - Math.sqrt(5));
+		const off = 2 / N;
+		const radius = 2;
+		for (let i = 0; i < N; i++) {
+			const k = i + 0.5;
+			const phi = Math.acos(1 - (2 * k) / N);
+			const theta = Math.PI * (1 + Math.sqrt(5)) * k;
+			const x = Math.cos(theta) * Math.sin(phi) * radius;
+			const y = Math.sin(theta) * Math.sin(phi) * radius;
+			const z = Math.cos(phi) * radius;
+		  
+			positions.set([x, y, z], i * 3);
+		}
+
+		particleGeometry.setAttribute(
+		"position",
+		new THREE.BufferAttribute(positions, 3)
+		);
+		const particleVertex = /* GLSL */ `
+		uniform float uTime;
+
+		void main() {
+			vec3 newPos = position;
+			newPos.y += 0.1 * sin(newPos.y * 6.0 + uTime);
+			vec4 mvPosition = modelViewMatrix * vec4(newPos, 1.0);
+			gl_PointSize = 6.0 / -mvPosition.z;
+			gl_Position = projectionMatrix * mvPosition;
+		}
+		`;
+
+		const particleFragment = /* GLSL */ `
+		void main() {
+			// gl_FragColor = vec4(vec3(1.0), 1.0);
+			gl_FragColor = vec4(vec3(1.0), 1.0);
+		}
+		`;
+		const _particleMaterial = new THREE.ShaderMaterial({
+			wireframe: true,
+			vertexShader: particleVertex,
+			fragmentShader: particleFragment,
+			uniforms: {
+				uTime: {
+					value: 0
+				}
+			},
+			transparent: true,
+			blending: THREE.AdditiveBlending,
+		})
+		const particleMesh = new THREE.Points(particleGeometry, _particleMaterial)
+		_scene.add(particleMesh)
+		particleMaterial.current = _particleMaterial
 
 		const _renderer = new THREE.WebGLRenderer()
 		_renderer.setPixelRatio(window.devicePixelRatio);
