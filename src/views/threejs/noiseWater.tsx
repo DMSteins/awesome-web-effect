@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from "react";
 import * as THREE from 'three';
 import fragmentShader from './shaders/noiseWater.fs?raw'
 import vertexShader from './shaders/noiseWater.vs?raw'
+import TextImg from '@/assets/text.png'
 
 export default ()=>{
     const scene = useRef<THREE.Scene>()
@@ -12,6 +13,7 @@ export default ()=>{
 	const mesh = useRef<THREE.Mesh>()
 	const particleMaterial = useRef<THREE.ShaderMaterial>()
 	const fireMaterial = useRef<THREE.ShaderMaterial>()
+	const textMaterial = useRef<THREE.ShaderMaterial>()
 	const renderBoxRef = useRef<HTMLDivElement>(null)
 	const render = () => {
 		if(!scene.current) return
@@ -19,6 +21,7 @@ export default ()=>{
 		material.current!.uniforms.uTime.value = time
 		particleMaterial.current!.uniforms.uTime.value = time
 		fireMaterial.current!.uniforms.uTime.value = time
+		textMaterial.current!.uniforms.uTime.value = time
 		mesh.current!.rotation.y = time * 0.3;
 		renderer.current!.render(scene.current!, camera.current!);
 		requestAnimationFrame(render);
@@ -159,6 +162,48 @@ export default ()=>{
 		const fireMesh = new THREE.Points(firefliesGeometry, _fireMaterial)
 
 		_scene.add(fireMesh)
+
+		const textGeometry = new THREE.PlaneGeometry(2, 1, 100, 100);
+		const textVertex = /* GLSL */ `
+		uniform float uTime;
+		varying vec2 vUv;
+
+		void main() {
+			vUv = uv;
+
+			vec3 newPos = position;
+			newPos.y += 0.06 * sin(newPos.x + uTime);
+			newPos.x += 0.1 * sin(newPos.x * 2.0 + uTime);
+			gl_Position = projectionMatrix * modelViewMatrix * vec4(newPos, 1.0);
+		}
+		`;
+
+		const textFragment = /* GLSL */ `
+		uniform sampler2D uTexture;
+		varying vec2 vUv;
+
+		void main() {
+			vec4 color = texture2D(uTexture, vUv);
+			gl_FragColor = color;
+		}
+		`;
+
+		const _textMaterial = new THREE.ShaderMaterial({
+			vertexShader: textVertex,
+			fragmentShader: textFragment,
+			uniforms: {
+				uTime: { value: 0 },
+				uTexture: {
+					value: new THREE.TextureLoader().load(TextImg),
+				},
+			},
+			transparent: true,
+		});
+		textMaterial.current = _textMaterial
+
+		const text = new THREE.Mesh(textGeometry, _textMaterial);
+		text.position.z = 1.7;
+		_scene.add(text);
 
 		const _renderer = new THREE.WebGLRenderer()
 		_renderer.setPixelRatio(window.devicePixelRatio);
