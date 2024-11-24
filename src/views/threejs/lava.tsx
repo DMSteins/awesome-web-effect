@@ -47,8 +47,20 @@ export default () => {
         _renderer.autoClear = false
 		renderBoxRef.current?.appendChild(_renderer.domElement);
 
+        /**
+         * RenderPass 通道的主要任务是渲染场景，但不直接将结果输出到屏幕上。它为后续的后期处理步骤提供输入
+         */
         const renderModel = new RenderPass(_scene, _camera);
+        /**
+         * BloomPass 是用来创建辉光效果的后期处理通道。
+         * 它通过识别场景中的亮区域，并对其应用模糊效果，从而在这些区域周围产生发光效果。
+         * 这种效果特别适用于模拟灯光和反光，增强场景的视觉冲击力
+         */
         const effectBloom = new BloomPass( 1.25 );
+        /**
+         * OutputPass 是用来将最终的渲染结果输出到屏幕上的后期处理通道。
+         * 在一系列的后期处理效果处理完成后，OutputPass 将这些效果的合成结果渲染到屏幕上
+         */
         const outputPass = new OutputPass();
         const _composer = new EffectComposer(_renderer);
         composer.current = _composer
@@ -147,7 +159,7 @@ export default () => {
 		scene.current.add(mesh);
 
 		clock.current = new THREE.Clock();
-		// render()
+		// animate()
 
 	}
     const animate = ()=>{
@@ -160,6 +172,9 @@ export default () => {
 
         renderer.current!.clear();
         composer.current!.render( 0.01 );
+
+        renderer.current!.render(scene.current!, camera.current!);
+		requestAnimationFrame(animate);
     }
 	useEffect(() => {
 		if(scene.current) return
